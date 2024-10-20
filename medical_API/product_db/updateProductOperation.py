@@ -20,8 +20,6 @@ def updateProductAllFields(productId,**ketword):
                                cursor.execute("UPDATE Products SET product_stock = ? WHERE product_id = ?",(value,productId))
          elif key  == "product_description":
                                cursor.execute("UPDATE Products SET product_description = ? WHERE product_id = ?",(value,productId))
-         elif key  == "product_image":
-                               cursor.execute("UPDATE Products SET product_image = ? WHERE product_id = ?",(value,productId))
          elif key  == "product_power":
                                cursor.execute("UPDATE Products SET product_power = ? WHERE product_id = ?",(value,productId))   
 

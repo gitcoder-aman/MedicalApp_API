@@ -29,6 +29,20 @@ def updateUserAllFields(userId,**ketword):
                 cursor.execute("UPDATE Users SET password = ? WHERE user_id = ?",(value,userId))
          elif key == "email":
                 cursor.execute("UPDATE Users SET email = ? WHERE user_id = ?",(value,userId))
+         elif key == "phone_number":
+                     cursor.execute("UPDATE Users SET phone_number = ? WHERE user_id = ?",(value,userId))
+         elif key == "level":
+                     cursor.execute("UPDATE Users SET level = ? WHERE user_id = ?",(value,userId))
+         elif key == "isApproved":
+                     cursor.execute("UPDATE Users SET isApproved = ? WHERE user_id = ?",(value,userId))
+         elif key == "block":
+                     cursor.execute("UPDATE Users SET block = ? WHERE user_id = ?",(value,userId))
+         elif key == "pinCode":
+                     cursor.execute("UPDATE Users SET pinCode = ? WHERE user_id = ?",(value,userId))
+         elif key == "address":
+                     cursor.execute("UPDATE Users SET address = ? WHERE user_id = ?",(value,userId))
+
+     
 
      conn.commit()
 

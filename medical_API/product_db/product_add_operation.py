@@ -18,7 +18,7 @@ def addProductOperation(name,category,price,stock,expiry_date,rating,description
                   product_expiry_date,
                   product_rating,
                   product_description,
-                  product_image,
+                  product_image_id,
                   product_power
                   ) VALUES (?,?,?,?,?,?,?,?,?,?)
             """,(product_id,name,category,price,stock,expiry_date,rating,description,image,power))

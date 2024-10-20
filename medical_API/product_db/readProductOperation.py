@@ -22,7 +22,7 @@ def getAllProductItem():
             "product_expiry_date":productItem[6],
             "product_rating":productItem[7],
             "product_description":productItem[8],
-            "product_image":productItem[9],
+            "product_image_id":productItem[9],
             "product_power":productItem[10]
         }
         productJson.append(tempProduct)
@@ -49,7 +49,7 @@ def getSpecificProductItem(productId):
             "product_expiry_date":productItem[6],
             "product_rating":productItem[7],
             "product_description":productItem[8],
-            "product_image":productItem[9],
+            "product_image_id":productItem[9],
             "product_power":productItem[10]
         }
         productJson.append(tempProduct)

@@ -4,6 +4,7 @@ def createStockTable():
     conn = sqlite3.connect("stock.db")
     cursor = conn.cursor()
 
+#yha badha dena hai stock
     cursor.execute(
         '''
         CREATE TABLE IF NOT EXISTS Stocks(

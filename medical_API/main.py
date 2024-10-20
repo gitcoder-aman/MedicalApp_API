@@ -1,4 +1,9 @@
-from flask import Flask,jsonify,request
+from flask import Flask,jsonify,request,Response
+from werkzeug.utils import secure_filename
+from uploadImg.db import db_init,db
+from uploadImg.models import Img
+
+
 from user_db.createTableOpration import createUserTables
 from user_db.addOperation import createUser
 from user_db.updateOperation import updateUserName,updateUserAllFields
@@ -13,15 +18,16 @@ from product_db.updateProductOperation import updateProductAllFields
 from product_db.deleteProductOperation import deleteProduct
 
 from order_db.createOrderDb import createOrderTable
-from order_db.read_order_operation import getAllOrderItem,getSpecificOrder
+from order_db.read_order_operation import getAllOrderItem,getSpecificOrder,getAllOrderThroughUser
 from order_db.order_add_operation import addOrderOperation
 from order_db.deleteOrderOperation import deleteOrder
+from order_db.updateOrderOperation import updateOrderAllFields
 
-from stock_db.createStockTable import createStockTable
-from stock_db.readStockOperation import getAllStockItem
-from stock_db.addStockOperation import addStockOperation
-from stock_db.updateStockOperation import updateStockAllFields
-from stock_db.deleteStockOperation import deleteStock
+from user_stock_db.createStockTable import createStockTable
+from user_stock_db.readStockOperation import getAllStockItem
+from user_stock_db.addStockOperation import addStockOperation
+from user_stock_db.updateStockOperation import updateStockAllFields
+from user_stock_db.deleteStockOperation import deleteStock
 
 from history_db.createHistoryTable  import createHistoryTable
 from history_db.addHistoryOperation import addSellHistoryOperation
@@ -31,6 +37,35 @@ from history_db.updateSalteHistoryOperation import updateSellHistoryItemFields
 
 app = Flask(__name__)   # app is just a variable (create a instance)
 
+# SQLAlchemy config. Read more: https://flask-sqlalchemy.palletsprojects.com/en/2.x/
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///img.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db_init(app)
+
+# @app.route('/upload', methods=['POST'])
+# def upload():
+#     pic = request.files['pic']
+#     if not pic:
+#         return 'No pic uploaded!', 400
+
+#     filename = secure_filename(pic.filename)
+#     mimetype = pic.mimetype
+#     if not filename or not mimetype:
+#         return 'Bad upload!', 400
+
+#     img = Img(img=pic.read(), name=filename, mimetype=mimetype)
+#     db.session.add(img)
+#     db.session.commit()
+
+#     return 'Img Uploaded!', 200
+
+@app.route('/getImg/<int:id>')
+def get_img(id):
+    img = Img.query.filter_by(id=id).first()
+    if not img:
+        return 'Img Not Found!', 404
+
+    return Response(img.img, mimetype=img.mimetype)
 
 @app.route('/',methods=['GET'])
 def home():
@@ -58,12 +93,12 @@ def signup():
                 address=address
            )
         else:
-             return jsonify({"status": "Invalid User", "message": "Mandatory field empty"})
+             return jsonify({"status": 400, "message": "Mandatory field empty"})
                  
         if data:
             return jsonify({"status" : 200,"message" : data})
         else:
-            return jsonify({"status" : "Invalid User","message":data})
+            return jsonify({"status" : 400,"message":data})
         
     except Exception as e:
         return jsonify({"status":400,"message":str(e)})
@@ -105,7 +140,7 @@ def login():
             if loginData:
                 return jsonify({"status" : 200,"message" : loginData[1]})
             else:
-                return jsonify({"status" : "Invalid User","message":loginData})
+                return jsonify({"status" : 200,"message":loginData})
         except Exception as e:
              return jsonify({"status":400,"message":str(e)})
 
@@ -172,11 +207,23 @@ def addProduct():
         expiry_date = request.form['product_expiry_date']
         rating = request.form['product_rating']
         description = request.form['product_description']
-        image = request.form['product_image']
-        power = request.form['product_power']
+        power = request.form['product_power']       
 
     
-        if(validate_product(name,category,price,stock,expiry_date,rating,description,image,power)):
+        pic = request.files['pic']
+        if not pic:
+           return 'No pic uploaded!', 400
+
+        filename = secure_filename(pic.filename)
+        mimetype = pic.mimetype
+        if not filename or not mimetype:
+             return 'Bad upload!', 400
+
+        img = Img(img=pic.read(), name=filename, mimetype=mimetype)
+        db.session.add(img)
+        db.session.commit()
+    
+        if(validate_product(name,category,price,stock,expiry_date,rating,description,power)):
                product_id = addProductOperation(
                 name=name,
                 category=category,
@@ -185,21 +232,21 @@ def addProduct():
                 expiry_date=expiry_date,
                 rating=rating,
                 description=description,
-                image=image,
+                image=img.id,
                 power=power
             )
         else:
-             return jsonify({"status": "Invalid Product fields", "message": "Mandatory field empty"})
+             return jsonify({"status": 400, "message": "Mandatory field empty"})
                  
         if product_id:
-            return jsonify({"status" : 200,"message" : product_id})
+              return jsonify({"status" : 200,"message" : product_id})
         else:
-            return jsonify({"status" : "Invalid Product fields","message":product_id})
+            return jsonify({"status" : 400,"message":product_id})
     except Exception as e:
            return jsonify({"status":400,"message":str(e)})      
 
-def validate_product(name,category,price,stock,expiry_date,rating,description,image,power):
-    if not name or not category or not price or not stock or not expiry_date or not rating or not description or not image or not power:
+def validate_product(name,category,price,stock,expiry_date,rating,description,power):
+    if not name or not category or not price or not stock or not expiry_date or not rating or not description or not power:
         return 0
     else:
          return 1
@@ -263,6 +310,7 @@ def order():
         product_id = request.form['product_id']
         product_name = request.form['product_name']
         prodcut_category = request.form['product_category']
+        product_image_id = request.form['product_image_id']
         user_name = request.form['user_name']
         isApproved = request.form['isApproved']
         quantity = request.form['product_quantity']
@@ -272,8 +320,12 @@ def order():
         taxCharge = request.form['tax_charge']
         totalPrice = request.form['total_price']
         orderDate = request.form['order_date']
+        user_address = request.form['user_address']
+        user_pinCode = request.form['user_pincode']
+        user_mobile = request.form['user_mobile']
+        user_email = request.form['user_email']
 
-        if(validate_order_data(user_id,product_id,product_name,prodcut_category,user_name,isApproved,quantity,price,subtotalPrice,totalPrice,orderDate)):
+        if(validate_order_data(user_id,product_id,product_name,prodcut_category,product_image_id,user_name,isApproved,quantity,price,subtotalPrice,totalPrice,orderDate,user_address,user_pinCode,user_mobile,user_email)):
                 orderId = addOrderOperation(
                 user_id=user_id,
                 product_id=product_id,
@@ -285,31 +337,58 @@ def order():
                 totalPrice=totalPrice,
                 orderDate=orderDate,
                 product_category=prodcut_category,
+                product_image_id = product_image_id,
                 subtotal_price=subtotalPrice,
                 tax_charge=taxCharge,
-                delivery_charge=deliveryCharge
+                delivery_charge=deliveryCharge,
+                user_email=user_email,
+                user_address=user_address,
+                user_mobile=user_mobile,
+                user_pinCode=user_pinCode
            )
         else:
-             return jsonify({"status": "Invalid Order", "message": "Mandatory field empty"})
+             return jsonify({"status": 400, "message": "Mandatory field empty"})
                  
         if orderId:
             return jsonify({"status" : 200,"message" : orderId})
         else:
-            return jsonify({"status" : "Invalid Order","message":orderId})
+            return jsonify({"status" : 400,"message":orderId})
         
     except Exception as e:
         return jsonify({"status":400,"message":str(e)})
     
-def validate_order_data(user_id,product_id,product_name,prodcut_category,user_name,isApproved,quantity,price,subtotalPrice,totalPrice,orderDate):
-    if not user_id or not product_id or not product_name or not user_name or not isApproved or not quantity or not price or not totalPrice or not orderDate or not prodcut_category or not subtotalPrice:
+def validate_order_data(user_id,product_id,product_name,prodcut_category,product_image_id,user_name,isApproved,quantity,price,subtotalPrice,totalPrice,orderDate,user_address,user_pinCode,user_mobile,user_email):
+    if not user_id or not product_id or not product_name or not user_name or not isApproved or not quantity or not price or not totalPrice or not orderDate or not prodcut_category or not product_image_id or not subtotalPrice or not user_address or not user_pinCode or not user_mobile or not user_email:
         return 0
     else:
          return 1
 
-@app.route('/getAllOrder',methods=['GET'])
+@app.route('/getAllOrders',methods=['GET'])
 def getAllOrder():
      return getAllOrderItem()
 
+@app.route('/updateOrder',methods=['PATCH'])
+def updateOrderOperation():
+     try:
+          orderId = request.form['orderId']
+
+          allFields = request.form.items()
+          updateOrder = {}
+
+          for key,value in allFields:
+               if key != 'orderId':
+                    updateOrder[key] = value
+
+          isUpdated = updateOrderAllFields(orderId,**updateOrder)
+
+          if(isUpdated):  
+                 return jsonify({"status":200,"message":"data updated Successfull"})
+          else:
+                return jsonify({"status":400,"message":"Order Id not found!"})
+                    
+     except Exception as e:
+          return jsonify({"status":400,"message":str(e)})
+     
 
 @app.route('/getSpecificOrder',methods=['POST'])
 def getSpecificOrderMain():
@@ -317,6 +396,16 @@ def getSpecificOrderMain():
           orderId = request.form['order_id']
           getOrderInfo = getSpecificOrder(orderId = orderId)
           return getOrderInfo
+     
+     except Exception as e:
+        return jsonify({"status":400,"message":str(e)})
+    
+@app.route('/getAllOrderThroughUser',methods=['POST'])
+def getAllOrderThroughUserMain():
+     try:
+          userId = request.form['user_id']
+          getAllOrderThroughUserList = getAllOrderThroughUser(user_id = userId)
+          return getAllOrderThroughUserList
      
      except Exception as e:
         return jsonify({"status":400,"message":str(e)})

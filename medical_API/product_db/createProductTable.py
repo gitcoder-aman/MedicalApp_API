@@ -13,10 +13,10 @@ def createProductTable():
         product_category VARCHAR(255),
         product_price INT,
         product_stock INT,
-        product_expiry_date DATE,
+        product_expiry_date VARCHAR(255),
         product_rating FLOAT,
         product_description VARCHAR(255),
-        product_image VARCHAR(255),
+        product_image_id VARCHAR(255),
         product_power VARCHAR(255)
         )
         '''

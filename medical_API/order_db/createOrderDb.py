@@ -13,6 +13,7 @@ def createOrderTable():
         product_id VARCHAR(255),
         product_name VARCHAR(255),
         product_category VARCHAR(255),
+        product_image_id VARCHAR(255),
         user_name VARCHAR(255),
         isApproved BOOLEAN,
         product_quantity INT,
@@ -21,7 +22,11 @@ def createOrderTable():
         delivery_charge FLOAT,
         tax_charge FLOAT,
         total_price FLOAT,
-        order_date DATE
+        order_date DATE,
+        user_address VARCHAR(255),
+        user_pinCode VARCHAR(255),
+        user_mobile VARCHAR(255),
+        user_email VARCHAR(255)
         )
         '''
     )
