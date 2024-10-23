@@ -309,7 +309,7 @@ def order():
         user_id = request.form['user_id']  #field name
         product_id = request.form['product_id']
         product_name = request.form['product_name']
-        prodcut_category = request.form['product_category']
+        product_category = request.form['product_category']
         product_image_id = request.form['product_image_id']
         user_name = request.form['user_name']
         isApproved = request.form['isApproved']
@@ -324,8 +324,19 @@ def order():
         user_pinCode = request.form['user_pincode']
         user_mobile = request.form['user_mobile']
         user_email = request.form['user_email']
+        order_status = request.form['order_status']
+        order_cancel_status = request.form['order_cancel_status']
+        user_street = request.form['user_street']
+        user_city = request.form['user_city']
+        user_state = request.form['user_state']
+        discountPrice = request.form['discount_price']
+        shipped_date = request.form['shipped_date']
+        out_of_delivery_date = request.form['out_of_delivery_date']
+        delivered_date = request.form['delivered_date']
 
-        if(validate_order_data(user_id,product_id,product_name,prodcut_category,product_image_id,user_name,isApproved,quantity,price,subtotalPrice,totalPrice,orderDate,user_address,user_pinCode,user_mobile,user_email)):
+        if(validate_order_data(user_id,product_id,product_name,product_category,product_image_id,user_name,
+                               isApproved,quantity,price,subtotalPrice,totalPrice,orderDate,user_address,user_pinCode,user_mobile,user_email,order_status,
+                               order_cancel_status,user_street,user_state,user_city,discountPrice)):
                 orderId = addOrderOperation(
                 user_id=user_id,
                 product_id=product_id,
@@ -336,7 +347,7 @@ def order():
                 product_price=price,
                 totalPrice=totalPrice,
                 orderDate=orderDate,
-                product_category=prodcut_category,
+                product_category=product_category,
                 product_image_id = product_image_id,
                 subtotal_price=subtotalPrice,
                 tax_charge=taxCharge,
@@ -344,7 +355,16 @@ def order():
                 user_email=user_email,
                 user_address=user_address,
                 user_mobile=user_mobile,
-                user_pinCode=user_pinCode
+                user_pinCode=user_pinCode,
+                order_status=order_status,
+                order_cancel_status=order_cancel_status,
+                user_street=user_street,
+                user_city=user_city,
+                user_state=user_state,
+                discountPrice=discountPrice,
+                shipped_date=shipped_date,
+                out_of_delivery_date=out_of_delivery_date,
+                delivered_date=delivered_date
            )
         else:
              return jsonify({"status": 400, "message": "Mandatory field empty"})
@@ -357,8 +377,9 @@ def order():
     except Exception as e:
         return jsonify({"status":400,"message":str(e)})
     
-def validate_order_data(user_id,product_id,product_name,prodcut_category,product_image_id,user_name,isApproved,quantity,price,subtotalPrice,totalPrice,orderDate,user_address,user_pinCode,user_mobile,user_email):
-    if not user_id or not product_id or not product_name or not user_name or not isApproved or not quantity or not price or not totalPrice or not orderDate or not prodcut_category or not product_image_id or not subtotalPrice or not user_address or not user_pinCode or not user_mobile or not user_email:
+def validate_order_data(user_id,product_id,product_name,product_category,product_image_id,user_name,isApproved,quantity,price,subtotalPrice,totalPrice,orderDate,user_address,user_pinCode,user_mobile,
+                        user_email,order_status,order_cancel_status,user_street,user_city,user_state,discountPrice):
+    if not user_id or not product_id or not product_name or not user_name or not isApproved or not quantity or not price or not totalPrice or not orderDate or not product_category or not product_image_id or not subtotalPrice or not user_address or not user_pinCode or not user_mobile or not user_email or not order_status or not order_cancel_status or not user_state or not user_street or not discountPrice or not user_city:
         return 0
     else:
          return 1

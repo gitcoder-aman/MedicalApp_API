@@ -32,7 +32,16 @@ def getAllOrderItem():
             "user_address":orderItem[16],
             "user_pinCode":orderItem[17],
             "user_mobile":orderItem[18],
-            "user_email":orderItem[19]
+            "user_email":orderItem[19],
+            "order_status":orderItem[20],
+            "order_cancel_status":orderItem[21],
+            "user_street":orderItem[22],
+            "user_city":orderItem[23],
+            "user_state":orderItem[24],
+            "discount_price":orderItem[25],
+            "shipped_date":orderItem[26],
+            "out_of_delivery_date":orderItem[27],
+            "delivered_date":orderItem[28]
         }
         ordersJson.append(tempOrder)
     return json.dumps(ordersJson)
@@ -69,7 +78,16 @@ def getSpecificOrder(orderId):
             "user_address":orderItem[16],
             "user_pinCode":orderItem[17],
             "user_mobile":orderItem[18],
-            "user_email":orderItem[19]
+            "user_email":orderItem[19],
+            "order_status":orderItem[20],
+            "order_cancel_status":orderItem[21],
+            "user_street":orderItem[22],
+            "user_city":orderItem[23],
+            "user_state":orderItem[24],
+            "discount_price":orderItem[25],
+            "shipped_date":orderItem[26],
+            "out_of_delivery_date":orderItem[27],
+            "delivered_date":orderItem[28]
         }
         
     orderJson.append(tempOrderSpecific)
@@ -108,7 +126,16 @@ def getAllOrderThroughUser(user_id):
             "user_address":orderItem[16],
             "user_pinCode":orderItem[17],
             "user_mobile":orderItem[18],
-            "user_email":orderItem[19]
+            "user_email":orderItem[19],
+            "order_status":orderItem[20],
+            "order_cancel_status":orderItem[21],
+            "user_street":orderItem[22],
+            "user_city":orderItem[23],
+            "user_state":orderItem[24],
+            "discount_price":orderItem[25],
+            "shipped_date":orderItem[26],
+            "out_of_delivery_date":orderItem[27],
+            "delivered_date":orderItem[28]
         }
         
         # Move the append statement inside the loop

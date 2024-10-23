@@ -26,7 +26,16 @@ def createOrderTable():
         user_address VARCHAR(255),
         user_pinCode VARCHAR(255),
         user_mobile VARCHAR(255),
-        user_email VARCHAR(255)
+        user_email VARCHAR(255),
+        order_status VARCHAR(255),
+        order_cancel_status VARCHAR(255),
+        user_street VARCHAR(255),
+        user_city VARCHAR(255),
+        user_state VARCHAR(255),
+        discount_price FLOAT,
+        shipped_date DATE,
+        out_of_delivery_date DATE,
+        delivered_date DATE
         )
         '''
     )

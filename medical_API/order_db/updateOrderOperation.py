@@ -16,6 +16,17 @@ def updateOrderAllFields(orderId,**ketword):
                                cursor.execute("UPDATE Orders SET user_mobile = ? WHERE order_id = ?",(value,orderId))
          elif key  == "user_email":
                                cursor.execute("UPDATE Orders SET user_email = ? WHERE order_id = ?",(value,orderId))
+         elif key  == "order_status":
+                               cursor.execute("UPDATE Orders SET order_status = ? WHERE order_id = ?",(value,orderId))
+         elif key  == "order_cancel_status":
+                               cursor.execute("UPDATE Orders SET order_cancel_status = ? WHERE order_id = ?",(value,orderId))
+         elif key  == "user_street":
+                               cursor.execute("UPDATE Orders SET user_street = ? WHERE order_id = ?",(value,orderId))
+         elif key  == "user_city":
+                               cursor.execute("UPDATE Orders SET user_city = ? WHERE order_id = ?",(value,orderId))
+         elif key  == "user_state":
+                               cursor.execute("UPDATE Orders SET user_state = ? WHERE order_id = ?",(value,orderId))
+                            
 
      conn.commit()
 
