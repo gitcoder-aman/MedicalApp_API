@@ -83,6 +83,22 @@ def signup():
         address = request.form['address']
         pinCode = request.form['pinCode']
 
+        # pic = request.files['pic']
+        # if not pic:
+        #    userImageId = -1
+        # else:
+        #  filename = secure_filename(pic.filename)
+        #  mimetype = pic.mimetype
+        #  if not filename or not mimetype:
+        #      return 'Bad upload!', 400
+
+        #  img = Img(img=pic.read(), name=filename, mimetype=mimetype)
+        #  db.session.add(img)
+        #  db.session.flush()  # Ensure that the ID is assigned before committing
+        #  userImageId = img.id
+        #  db.session.commit()
+
+
         if(validate_user(name,password,email)):
                 data = createUser(
                 name=name,
@@ -90,7 +106,8 @@ def signup():
                 phone_number=phone,
                 email=email,
                 pinCode=pinCode,
-                address=address
+                address=address,
+                userImageId = -1
            )
         else:
              return jsonify({"status": 400, "message": "Mandatory field empty"})
@@ -160,32 +177,57 @@ def updateUserNameMain():
      except Exception as e:
           return jsonify({"status":400,"message":str(e)})
      
-@app.route('/updateUser',methods=['PATCH'])
+@app.route('/updateUser', methods=['PATCH'])
 def updateUserData():
-     try:
-          userId = request.form['userId']
+    try:
+        userId = request.form['userId']
 
-          allFields = request.form.items()
-          updateUser = {}
+        allFields = request.form.items()
+        updateUser = {}
+        user_image_id = None  # Initialize user image ID
 
-          for key,value in allFields:
-               if key != 'userId':
-                    updateUser[key] = value
 
-          isUpdated = updateUserAllFields(userId=userId,**updateUser)
+        for key, value in allFields:
+            if key != 'userId':
+                updateUser[key] = value
 
-          if(isUpdated):  
-                 return jsonify({"status":200,"message":"data updated"})
-          else:
-                return jsonify({"status":400,"message":"User Id not found!"})
-                    
-     except Exception as e:
-          return jsonify({"status":400,"message":str(e)})
+        # Check for the 'pic' file in the request
+        pic = request.files.get('pic')  # Use .get() to avoid KeyError
+
+        if pic and pic.filename:  # Check if a file is provided
+            filename = secure_filename(pic.filename)
+            mimetype = pic.mimetype
+            if not filename or not mimetype:
+                return jsonify({'status': 400, 'message': 'Bad upload!'}), 400
+            
+            new_img = Img(img=pic.read(), name=filename, mimetype=mimetype)
+            db.session.add(new_img)
+            db.session.flush()  # Get the new image ID
+            user_image_id = new_img.id
+
+            # Link this new image to the user
+            updateUser['user_image_id'] = user_image_id  # Associate the new image ID
+            
+# Only update if there are fields to update
+        if updateUser:
+            isUpdated = updateUserAllFields(userId=userId, **updateUser)
+
+            if isUpdated:  
+                db.session.commit()  # Commit the session only after successful update
+                return jsonify({"status": 200, "message": "Data updated"})
+            else:
+                return jsonify({"status": 400, "message": "Data not updated"})
+        else:
+            return jsonify({"status": 400, "message": "No fields to update"})
+
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of error
+        return jsonify({"status": 400, "message": str(e)})
 
 @app.route('/deleteUser',methods=['DELETE'])
 def deleteUser():
      try:
-          userId = request.form['userId']
+          userId = request.args.get('userId')
           isDeleted = deleteUserOperation(userId=userId)
 
           if(isDeleted):  
@@ -272,25 +314,47 @@ def updateProductOperation():
 
           allFields = request.form.items()
           updateProduct = {}
+          product_image_id = None
 
           for key,value in allFields:
                if key != 'productId':
                     updateProduct[key] = value
 
-          isUpdated = updateProductAllFields(productId,**updateProduct)
+        # Check for the 'pic' file in the request   
+          pic = request.files.get('pic')
+          if pic and pic.filename:  # Check if a file is provided
+            filename = secure_filename(pic.filename)
+            mimetype = pic.mimetype
+            if not filename or not mimetype:
+                return jsonify({'status': 400, 'message': 'Bad upload!'}), 400
+            
+            new_img = Img(img=pic.read(), name=filename, mimetype=mimetype)
+            db.session.add(new_img)
+            db.session.flush()  # Get the new image ID
+            product_image_id = new_img.id
+            # Link this new image to the user
+            updateProduct['product_image_id'] = product_image_id
 
-          if(isUpdated):  
-                 return jsonify({"status":200,"message":"data updated Successfull"})
+          if updateProduct:
+             isUpdated = updateProductAllFields(productId,**updateProduct)
+
+             if isUpdated:
+                  db.session.commit()
+                  return jsonify({"status": 200, "message": "Data updated"})
+             else:
+                return jsonify({"status": 400, "message": "Data not updated"})
+
           else:
-                return jsonify({"status":400,"message":"Product Id not found!"})
-                    
+            return jsonify({"status": 400, "message": "No fields to update"})
+
      except Exception as e:
-          return jsonify({"status":400,"message":str(e)})
+        db.session.rollback()  # Rollback in case of error
+        return jsonify({"status": 400, "message": str(e)})     
      
 @app.route('/deleteProduct',methods=['DELETE'])
 def deleteProductOperation():
      try:
-          productId = request.form['productId']
+          productId = request.args.get('productId')
           isDeleted = deleteProduct(productId=productId)
 
           if(isDeleted):  
@@ -453,6 +517,7 @@ def stock():
     try:
         user_id = request.form['user_id']  #field name
         product_id = request.form['product_id']
+        order_id = request.form['order_id']
         product_name = request.form['product_name']
         user_name = request.form['user_name']
         certified = request.form['certified']
@@ -460,7 +525,7 @@ def stock():
         price = request.form['price']
         category = request.form['product_category']
 
-        if(validate_stock_data(user_id,product_id,product_name,user_name,certified,stock,price,category)):
+        if(validate_stock_data(user_id,product_id,product_name,user_name,certified,stock,price,category,order_id)):
             stockId = addStockOperation(
                 user_id=user_id,
                 user_name=user_name,
@@ -469,7 +534,8 @@ def stock():
                 product_name=product_name,
                 certified=certified,
                 price=price,
-                stock=stock
+                stock=stock,
+                order_id=order_id
            )
         else:
              return jsonify({"status": "Invalid User", "message": "Mandatory field empty"})
@@ -482,8 +548,8 @@ def stock():
     except Exception as e:
         return jsonify({"status":400,"message":str(e)})
     
-def validate_stock_data(user_id,product_id,product_name,user_name,certified,stock,price,category):
-    if not user_id or not product_id or not product_name or not user_name or not certified or not stock or not price or not category:
+def validate_stock_data(user_id,product_id,product_name,user_name,certified,stock,price,category,order_id):
+    if not user_id or not product_id or not product_name or not user_name or not certified or not stock or not price or not category or not order_id:
         return 0
     else:
          return 1
@@ -557,7 +623,7 @@ def sell_History():
                 quantity=quantity
            )
         else:
-             return jsonify({"status": "Invalid User", "message": "Mandatory field empty"})
+             return jsonify({"status": 400, "message": "Mandatory field empty"})
                  
         if stockId:
             return jsonify({"status" : 200,"message" : stockId})

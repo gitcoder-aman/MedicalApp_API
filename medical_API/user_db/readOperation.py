@@ -27,7 +27,8 @@ def getAllUsers():
             "email" : user[8],
             "phone_number" : user[9],
             "pinCode" : user[10],
-            "address" : user[11]
+            "address" : user[11],
+            "user_image_id":user[12]
         }
         
         userJson.append(tempUser)
@@ -60,7 +61,8 @@ def getSpecificUser(userId):
             "email" : user[8],
             "phone_number" : user[9],
             "pinCode" : user[10],
-            "address" : user[11]
+            "address" : user[11],
+            "user_image_id":user[12]
         }
         
         userJson.append(tempUserSpecific)

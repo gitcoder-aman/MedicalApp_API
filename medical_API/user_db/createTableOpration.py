@@ -17,7 +17,8 @@ def createUserTables():
                    email VARCHAR(255),
                    phone_number VARCHAR(255),
                    pinCode VARCHAR(255),
-                   address VARCHAR(255))
+                   address VARCHAR(255),
+                   user_image_id VARCHAR(20))
     ''')
     conn.commit()
     conn.close()

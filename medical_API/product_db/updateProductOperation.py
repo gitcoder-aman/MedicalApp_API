@@ -22,6 +22,8 @@ def updateProductAllFields(productId,**ketword):
                                cursor.execute("UPDATE Products SET product_description = ? WHERE product_id = ?",(value,productId))
          elif key  == "product_power":
                                cursor.execute("UPDATE Products SET product_power = ? WHERE product_id = ?",(value,productId))   
+         elif key  == "product_image_id":
+                               cursor.execute("UPDATE Products SET product_image_id = ? WHERE product_id = ?",(value,productId))   
 
      conn.commit()
 

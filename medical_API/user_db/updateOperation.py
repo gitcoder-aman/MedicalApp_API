@@ -41,6 +41,8 @@ def updateUserAllFields(userId,**ketword):
                      cursor.execute("UPDATE Users SET pinCode = ? WHERE user_id = ?",(value,userId))
          elif key == "address":
                      cursor.execute("UPDATE Users SET address = ? WHERE user_id = ?",(value,userId))
+         elif key == "user_image_id":
+                cursor.execute("UPDATE Users SET user_image_id = ? WHERE user_id = ?",(value,userId))
 
      
 

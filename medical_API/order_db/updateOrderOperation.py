@@ -26,6 +26,13 @@ def updateOrderAllFields(orderId,**ketword):
                                cursor.execute("UPDATE Orders SET user_city = ? WHERE order_id = ?",(value,orderId))
          elif key  == "user_state":
                                cursor.execute("UPDATE Orders SET user_state = ? WHERE order_id = ?",(value,orderId))
+         elif key == "shipped_date":
+                               cursor.execute("UPDATE Orders SET shipped_date = ? WHERE order_id = ?",(value,orderId))
+         elif key == "out_of_delivery_date":
+                               cursor.execute("UPDATE Orders SET out_of_delivery_date = ? WHERE order_id = ?",(value,orderId))
+         elif key == "delivered_date":
+                               cursor.execute("UPDATE Orders SET delivered_date = ? WHERE order_id = ?",(value,orderId))
+       
                             
 
      conn.commit()

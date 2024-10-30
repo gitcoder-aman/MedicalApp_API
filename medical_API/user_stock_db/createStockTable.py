@@ -10,6 +10,7 @@ def createStockTable():
         CREATE TABLE IF NOT EXISTS Stocks(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id VARCHAR(255),
+        order_id VARCHAR(255),
         product_name VARCHAR(255),
         product_category VARCHAR(255),
         certified BOOLEAN,

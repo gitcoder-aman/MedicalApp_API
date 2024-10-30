@@ -2,7 +2,7 @@ import sqlite3
 import uuid
 from datetime import date
 
-def createUser(name,password,phone_number,email,pinCode,address):
+def createUser(name,password,phone_number,email,pinCode,address,userImageId):
    conn = sqlite3.connect("my_medical_shop.db")
    cursor = conn.cursor() 
 
@@ -21,8 +21,9 @@ def createUser(name,password,phone_number,email,pinCode,address):
                   email,
                   phone_number,
                   pinCode,
-                  address) VALUES (?,?,?,?,?,?,?,?,?,?,?)
-            """,(user_id,password,1,data_of_account_creation,0,0,name,email,phone_number,pinCode,address))
+                  address,
+                  user_image_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            """,(user_id,password,1,data_of_account_creation,0,0,name,email,phone_number,pinCode,address,userImageId))
    
    conn.commit()
    conn.close()
