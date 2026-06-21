@@ -11,6 +11,7 @@ env/
 
 # Environment secrets - NEVER commit this
 .env
+.env.example
 
 # SQLite databases (migrated to PostgreSQL)
 *.db
