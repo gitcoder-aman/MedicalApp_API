@@ -1,70 +1,41 @@
-import sqlite3
 import json
+from db_config import get_connection
+
+def _row_to_user(user):
+    return {
+        "id":                       user[0],
+        "user_id":                  user[1],
+        "password":                 user[2],
+        "level":                    user[3],
+        "date_of_account_creation": str(user[4]),
+        "isApproved":               user[5],
+        "block":                    user[6],
+        "name":                     user[7],
+        "email":                    user[8],
+        "phone_number":             user[9],
+        "pinCode":                  user[10],
+        "address":                  user[11],
+        "user_image_id":            user[12],
+    }
 
 def getAllUsers():
-    conn = sqlite3.connect("my_medical_shop.db")
+    conn = get_connection()
     cursor = conn.cursor()
-
 
     cursor.execute("SELECT * FROM Users")
     users = cursor.fetchall()
+    cursor.close()
     conn.close()
 
-    # print(users)
-
-    userJson = []
-
-    for user in users:
-        tempUser = {
-            "id" : user[0],
-            "user_id" : user[1],
-            "password" : user[2],
-            "level" : user[3],
-            "date_of_account_creation" : user[4],
-            "isApproved" : user[5],
-            "block" : user[6],
-            "name" : user[7],
-            "email" : user[8],
-            "phone_number" : user[9],
-            "pinCode" : user[10],
-            "address" : user[11],
-            "user_image_id":user[12]
-        }
-        
-        userJson.append(tempUser)
-
-    return json.dumps(userJson)
-        # print(json.dumps(userJson))
-        
-# getAllUsers()
+    return json.dumps([_row_to_user(u) for u in users])
 
 def getSpecificUser(userId):
-    conn = sqlite3.connect("my_medical_shop.db")
+    conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM Users WHERE user_id =?",(userId,))
+    cursor.execute("SELECT * FROM Users WHERE user_id = %s", (userId,))
     users = cursor.fetchall()
+    cursor.close()
     conn.close()
 
-    userJson = []
-
-    for user in users:
-        tempUserSpecific = {
-            "id" : user[0],
-            "user_id" : user[1],
-            "password" : user[2],
-            "level" : user[3],
-            "date_of_account_creation" : user[4],
-            "isApproved" : user[5],
-            "block" : user[6],
-            "name" : user[7],
-            "email" : user[8],
-            "phone_number" : user[9],
-            "pinCode" : user[10],
-            "address" : user[11],
-            "user_image_id":user[12]
-        }
-        
-        userJson.append(tempUserSpecific)
-
-    return json.dumps(userJson)
+    return json.dumps([_row_to_user(u) for u in users])

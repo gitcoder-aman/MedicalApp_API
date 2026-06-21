@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Environment secrets - NEVER commit this
+.env
+
+# SQLite databases (migrated to PostgreSQL)
+*.db
+*.sqlite
+*.sqlite3
+
+# Flask instance folder
+medical_API/instance/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

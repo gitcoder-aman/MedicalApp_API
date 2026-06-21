@@ -1,16 +1,17 @@
-import sqlite3
+from db_config import get_connection
 
 def deleteUserOperation(userId):
-    conn = sqlite3.connect("my_medical_shop.db")
+    conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM Users WHERE user_id=?",(userId,))        
+    cursor.execute("DELETE FROM Users WHERE user_id = %s", (userId,))
     conn.commit()
+    rows_affected = cursor.rowcount
+    cursor.close()
     conn.close()
 
-    # Check if any rows were affected
-    if cursor.rowcount > 0:
-        print("Delete User successfully. Rows affected:", cursor.rowcount)
+    if rows_affected > 0:
+        print("Delete User successfully. Rows affected:", rows_affected)
         return 1
     else:
         print("No rows were Deleted. Check if the userId exists.")

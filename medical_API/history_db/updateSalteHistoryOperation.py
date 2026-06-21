@@ -1,44 +1,45 @@
-import sqlite3
+import psycopg2
+from db_config import get_connection
 
-def updateSellHistoryItemFields(sellId,**ketword):
+def updateSellHistoryItemFields(sellId, **keyword):
+    conn = None
     try:
-     conn = sqlite3.connect("sell_history.db",timeout=10)
-     cursor = conn.cursor()
-     
-     for key,value in ketword.items():
-         if key == "user_id":
-                cursor.execute("UPDATE Sell_History SET user_id = ? WHERE sell_id = ?",(value,sellId))
-         elif key == "product_id":
-                cursor.execute("UPDATE Sell_History SET product_id = ? WHERE sell_id = ?",(value,sellId))
-         elif key == "quantity":
-                cursor.execute("UPDATE Sell_History SET quantity = ? WHERE sell_id = ?",(value,sellId))
-         elif key  == "remaining_stock":
-                               cursor.execute("UPDATE Sell_History SET remaining_stock = ? WHERE sell_id = ?",(value,sellId))
-         elif key  == "date_of_sell":
-                               cursor.execute("UPDATE Sell_History SET date_of_sell = ? WHERE sell_id = ?",(value,sellId))
-         elif key  == "total_amount":
-                               cursor.execute("UPDATE Sell_History SET total_amount = ? WHERE sell_id = ?",(value,sellId))
-         elif key  == "price":
-                               cursor.execute("UPDATE Sell_History SET price = ? WHERE sell_id = ?",(value,sellId))
-         elif key  == "product_name":
-                               cursor.execute("UPDATE Sell_History SET product_name = ? WHERE sell_id = ?",(value,sellId))
-         elif key  == "user_name":
-                               cursor.execute("UPDATE Sell_History SET user_name = ? WHERE sell_id = ?",(value,sellId)) 
-         elif key == "product_category"  :
-                 cursor.execute("UPDATE Sell_History SET product_category = ? WHERE sell_id = ?",(value,sellId)) 
+        conn = get_connection()
+        cursor = conn.cursor()
 
-     conn.commit()
+        field_map = {
+            "user_id":          "user_id",
+            "product_id":       "product_id",
+            "quantity":         "quantity",
+            "remaining_stock":  "remaining_stock",
+            "date_of_sell":     "date_of_sell",
+            "total_amount":     "total_amount",
+            "price":            "price",
+            "product_name":     "product_name",
+            "user_name":        "user_name",
+            "product_category": "product_category",
+        }
 
-     # Check if any rows were affected
-     if cursor.rowcount > 0:
-                print("Product Updated successful. Rows affected:", cursor.rowcount)
-                return 1
-     else:
-                print("No rows were updated. Check if the Product id doesn't exists.")
-                return 0
+        for key, value in keyword.items():
+            if key in field_map:
+                cursor.execute(
+                    f"UPDATE Sell_History SET {field_map[key]} = %s WHERE sell_id = %s",
+                    (value, sellId)
+                )
 
-    except sqlite3.OperationalError as e:
+        conn.commit()
+
+        if cursor.rowcount > 0:
+            print("Sell History Updated successful. Rows affected:", cursor.rowcount)
+            return 1
+        else:
+            print("No rows were updated. Check if the sell_id doesn't exists.")
+            return 0
+
+    except psycopg2.OperationalError as e:
         print("OperationalError:", e)
+        return 0
     finally:
-        # Close the connection
-     conn.close()
+        if conn:
+            cursor.close()
+            conn.close()

@@ -1,16 +1,17 @@
-import sqlite3
+from db_config import get_connection
 
 def deleteSellHistroyItem(sell_Id):
-    conn = sqlite3.connect("sell_history.db")
+    conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM Sell_History WHERE sell_id=?",(sell_Id,))        
+    cursor.execute("DELETE FROM Sell_History WHERE sell_id = %s", (sell_Id,))
     conn.commit()
+    rows_affected = cursor.rowcount
+    cursor.close()
     conn.close()
 
-    # Check if any rows were affected
-    if cursor.rowcount > 0:
-        print("Sell History Item Deleted successfully. Rows affected:", cursor.rowcount)
+    if rows_affected > 0:
+        print("Sell History Item Deleted successfully. Rows affected:", rows_affected)
         return 1
     else:
         print("No rows were Deleted. Check if the Sell ID doesn't exists.")

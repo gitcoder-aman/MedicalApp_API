@@ -1,57 +1,39 @@
-import sqlite3
 import json
+from db_config import get_connection
+
+def _row_to_product(p):
+    return {
+        "id":                   p[0],
+        "product_id":           p[1],
+        "product_name":         p[2],
+        "product_category":     p[3],
+        "product_price":        p[4],
+        "product_stock":        p[5],
+        "product_expiry_date":  p[6],
+        "product_rating":       p[7],
+        "product_description":  p[8],
+        "product_image_id":     p[9],
+        "product_power":        p[10],
+    }
 
 def getAllProductItem():
-    conn = sqlite3.connect("product.db")
+    conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * from Products")
+    cursor.execute("SELECT * FROM Products")
     products = cursor.fetchall()
+    cursor.close()
     conn.close()
 
-    productJson = []
-
-    for productItem in products:
-        tempProduct = {
-            "id" : productItem[0],
-            "product_id" : productItem[1],
-            "product_name":productItem[2],
-            "product_category":productItem[3],
-            "product_price":productItem[4],
-            "product_stock":productItem[5],
-            "product_expiry_date":productItem[6],
-            "product_rating":productItem[7],
-            "product_description":productItem[8],
-            "product_image_id":productItem[9],
-            "product_power":productItem[10]
-        }
-        productJson.append(tempProduct)
-    return json.dumps(productJson)
+    return json.dumps([_row_to_product(p) for p in products])
 
 def getSpecificProductItem(productId):
-    conn = sqlite3.connect("product.db")
+    conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM Products WHERE product_id =?",(productId,))
+    cursor.execute("SELECT * FROM Products WHERE product_id = %s", (productId,))
     products = cursor.fetchall()
+    cursor.close()
     conn.close()
 
-    productJson = []
-
-    for productItem in products:
-        tempProduct = {
-            "id" : productItem[0],
-            "product_id" : productItem[1],
-            "product_name":productItem[2],
-            "product_category":productItem[3],
-            "product_price":productItem[4],
-            "product_stock":productItem[5],
-            "product_expiry_date":productItem[6],
-            "product_rating":productItem[7],
-            "product_description":productItem[8],
-            "product_image_id":productItem[9],
-            "product_power":productItem[10]
-        }
-        productJson.append(tempProduct)
-    return json.dumps(productJson)
-
+    return json.dumps([_row_to_product(p) for p in products])

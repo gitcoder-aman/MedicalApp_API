@@ -1,40 +1,43 @@
-import sqlite3
+import psycopg2
+from db_config import get_connection
 
-def updateStockAllFields(stockId,**ketword):
+def updateStockAllFields(stockId, **keyword):
+    conn = None
     try:
-     conn = sqlite3.connect("stock.db",timeout=10)
-     cursor = conn.cursor()
-     
-     for key,value in ketword.items():
-         if key == "user_id":
-                cursor.execute("UPDATE Stocks SET user_id = ? WHERE id = ?",(value,stockId))
-         elif key == "product_id":
-                cursor.execute("UPDATE Stocks SET product_id = ? WHERE id = ?",(value,stockId))
-         elif key == "product_name":
-                cursor.execute("UPDATE Stocks SET product_name = ? WHERE id = ?",(value,stockId))
-         elif key  == "user_name":
-                               cursor.execute("UPDATE Stocks SET user_name = ? WHERE id = ?",(value,stockId))
-         elif key  == "certified":
-                               cursor.execute("UPDATE Stocks SET certified = ? WHERE id = ?",(value,stockId))
-         elif key  == "stock":
-                               cursor.execute("UPDATE Stocks SET stock = ? WHERE id = ?",(value,stockId))
-         elif key  == "price":
-                               cursor.execute("UPDATE Stocks SET price = ? WHERE id = ?",(value,stockId))
-         elif key  == "product_category":
-                               cursor.execute("UPDATE Stocks SET product_category = ? WHERE id = ?",(value,stockId))
+        conn = get_connection()
+        cursor = conn.cursor()
 
-     conn.commit()
+        field_map = {
+            "user_id":          "user_id",
+            "product_id":       "product_id",
+            "product_name":     "product_name",
+            "user_name":        "user_name",
+            "certified":        "certified",
+            "product_stock":    "product_stock",
+            "product_price":    "product_price",
+            "product_category": "product_category",
+        }
 
-     # Check if any rows were affected
-     if cursor.rowcount > 0:
-                print("Stocks Updated successfully. Rows affected:", cursor.rowcount)
-                return 1
-     else:
-                print("No rows were updated. Check if the Stocks id doesn't exists.")
-                return 0
+        for key, value in keyword.items():
+            if key in field_map:
+                cursor.execute(
+                    f"UPDATE Stocks SET {field_map[key]} = %s WHERE id = %s",
+                    (value, stockId)
+                )
 
-    except sqlite3.OperationalError as e:
+        conn.commit()
+
+        if cursor.rowcount > 0:
+            print("Stocks Updated successfully. Rows affected:", cursor.rowcount)
+            return 1
+        else:
+            print("No rows were updated. Check if the Stocks id doesn't exists.")
+            return 0
+
+    except psycopg2.OperationalError as e:
         print("OperationalError:", e)
+        return 0
     finally:
-        # Close the connection
-     conn.close()
+        if conn:
+            cursor.close()
+            conn.close()

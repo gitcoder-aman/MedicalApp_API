@@ -1,29 +1,27 @@
-import sqlite3
 import json
+from db_config import get_connection
 
 def getAllStockItem():
-    conn = sqlite3.connect("stock.db")
+    conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * from Stocks")
+    cursor.execute("SELECT * FROM Stocks")
     stocks = cursor.fetchall()
+    cursor.close()
     conn.close()
 
     stockJson = []
-
-    for stockItem in stocks:
-        tempStock = {
-            "id" : stockItem[0],
-            "product_id" : stockItem[1],
-            "order_id":stockItem[2],
-            "product_name":stockItem[3],
-            "product_category":stockItem[4],
-            "certified":stockItem[5],
-            "product_price":stockItem[6],
-            "product_stock":stockItem[7],
-            "user_name":stockItem[8],
-            "user_id":stockItem[9],
-            
-        }
-        stockJson.append(tempStock)
+    for s in stocks:
+        stockJson.append({
+            "id":               s[0],
+            "product_id":       s[1],
+            "order_id":         s[2],
+            "product_name":     s[3],
+            "product_category": s[4],
+            "certified":        s[5],
+            "product_price":    s[6],
+            "product_stock":    s[7],
+            "user_name":        s[8],
+            "user_id":          s[9],
+        })
     return json.dumps(stockJson)

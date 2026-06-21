@@ -1,28 +1,32 @@
-import sqlite3
 import uuid
+from db_config import get_connection
 
-def addSellHistoryOperation(user_id,product_id,product_name,user_name,quantity,remaining_stock,price,product_category,date_of_sell,total_amount):
-    conn = sqlite3.connect("sell_history.db")
+def addSellHistoryOperation(user_id, product_id, product_name, user_name, quantity,
+                            remaining_stock, price, product_category, date_of_sell, total_amount):
+    conn = get_connection()
     cursor = conn.cursor()
 
-    sell_id  = "H_"+str(uuid.uuid4())
+    sell_id = "H_" + str(uuid.uuid4())
 
     cursor.execute("""
-                INSERT INTO Sell_History(
-                  sell_id,
-                  product_id,
-                  quantity,
-                  remaining_stock,
-                  date_of_sell,
-                  total_amount,
-                  price,
-                  product_name,
-                  product_category,
-                  user_name,
-                  user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)
-            """,(sell_id,product_id,quantity,remaining_stock,date_of_sell,total_amount,price,product_name,product_category,user_name,user_id))
-         
+        INSERT INTO Sell_History (
+            sell_id,
+            product_id,
+            quantity,
+            remaining_stock,
+            date_of_sell,
+            total_amount,
+            price,
+            product_name,
+            product_category,
+            user_name,
+            user_id
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (sell_id, product_id, quantity, remaining_stock, date_of_sell,
+          total_amount, price, product_name, product_category, user_name, user_id))
+
     conn.commit()
+    cursor.close()
     conn.close()
 
     return sell_id

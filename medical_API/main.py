@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()  # Load DATABASE_URL (and any other vars) from .env in development
+
 from flask import Flask,jsonify,request,Response
 from werkzeug.utils import secure_filename
 from uploadImg.db import db_init,db
@@ -38,7 +42,16 @@ from history_db.updateSalteHistoryOperation import updateSellHistoryItemFields
 app = Flask(__name__)   # app is just a variable (create a instance)
 
 # SQLAlchemy config. Read more: https://flask-sqlalchemy.palletsprojects.com/en/2.x/
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///img.db'
+# Use the same Neon PostgreSQL connection for Flask-SQLAlchemy (images table)
+# Flask-SQLAlchemy (used for the `images` table only via uploadImg module).
+# On Render/cloud (USE_PSYCOPG2=true): uses Neon PostgreSQL directly.
+# On local dev (port 5432 blocked):    falls back to SQLite for images only.
+_use_pg = os.getenv('USE_PSYCOPG2', 'false').lower() == 'true'
+if _use_pg:
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///img_local.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db_init(app)
 
