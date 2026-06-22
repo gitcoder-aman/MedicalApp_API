@@ -18,8 +18,15 @@ def createUserTables():
             phone_number     VARCHAR(255),
             pinCode          VARCHAR(255),
             address          VARCHAR(255),
-            user_image_id    VARCHAR(20)
+            user_image_id    TEXT
         )
+    """)
+
+    # Fix existing table if column was already created as VARCHAR(20)
+    # Cloudinary URLs are ~100+ chars and won't fit in VARCHAR(20)
+    cursor.execute("""
+        ALTER TABLE Users
+        ALTER COLUMN user_image_id TYPE TEXT
     """)
 
     conn.commit()

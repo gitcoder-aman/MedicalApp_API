@@ -15,9 +15,15 @@ def createProductTable():
             product_expiry_date VARCHAR(255),
             product_rating      FLOAT,
             product_description VARCHAR(255),
-            product_image_id    VARCHAR(255),
+            product_image_id    TEXT,
             product_power       VARCHAR(255)
         )
+    """)
+
+    # Fix existing table — Cloudinary URLs won't fit in VARCHAR(255)
+    cursor.execute("""
+        ALTER TABLE Products
+        ALTER COLUMN product_image_id TYPE TEXT
     """)
 
     conn.commit()

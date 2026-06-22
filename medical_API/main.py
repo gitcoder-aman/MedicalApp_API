@@ -1,11 +1,13 @@
 import os
-from dotenv import load_dotenv
-load_dotenv()  # Load DATABASE_URL (and any other vars) from .env in development
+import cloudinary
+import cloudinary.uploader
+from dotenv import load_dotenv, find_dotenv
 
-from flask import Flask,jsonify,request,Response
-from werkzeug.utils import secure_filename
-from uploadImg.db import db_init,db
-from uploadImg.models import Img
+# find_dotenv() walks up from this file's directory to find the .env file
+# This is needed because .env is in the parent folder (Flask/), not medical_API/
+load_dotenv(find_dotenv())
+
+from flask import Flask,jsonify,request
 
 
 from user_db.createTableOpration import createUserTables
@@ -41,19 +43,60 @@ from history_db.updateSalteHistoryOperation import updateSellHistoryItemFields
 
 app = Flask(__name__)   # app is just a variable (create a instance)
 
-# SQLAlchemy config. Read more: https://flask-sqlalchemy.palletsprojects.com/en/2.x/
-# Use the same Neon PostgreSQL connection for Flask-SQLAlchemy (images table)
-# Flask-SQLAlchemy (used for the `images` table only via uploadImg module).
-# On Render/cloud (USE_PSYCOPG2=true): uses Neon PostgreSQL directly.
-# On local dev (port 5432 blocked):    falls back to SQLite for images only.
-_use_pg = os.getenv('USE_PSYCOPG2', 'false').lower() == 'true'
-if _use_pg:
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///img_local.db'
+# Cloudinary config — images are uploaded here over HTTPS (port 443)
+# Add these 3 keys to your .env file from cloudinary.com dashboard
+cloudinary.config(
+    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key    = os.getenv('CLOUDINARY_API_KEY'),
+    api_secret = os.getenv('CLOUDINARY_API_SECRET'),
+    secure     = True,
+    timeout    = 60    # wait up to 60s for response — set here, NOT in upload()
+)
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db_init(app)
+
+def upload_image_to_cloudinary(pic, folder='medical_app'):
+    """Upload a Flask FileStorage image to Cloudinary and return the secure URL.
+
+    Uses temp file + 60s timeout + 3 retries to handle ISP networks that drop
+    the Cloudinary response AFTER the upload already succeeded on their end.
+    """
+    import tempfile
+    import time
+
+    ext = os.path.splitext(pic.filename)[1] or '.jpg'
+    tmp_path = None
+    last_error = None
+
+    try:
+        # Step 1: Save image to a temp file on disk
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            pic.save(tmp)
+            tmp_path = tmp.name
+
+        # Step 2: Retry up to 3 times (handles dropped response from ISP)
+        for attempt in range(1, 4):
+            try:
+                print(f"[Cloudinary] Upload attempt {attempt}/3 ...")
+                result = cloudinary.uploader.upload(
+                    tmp_path,
+                    folder=folder
+                )
+                print(f"[Cloudinary] Upload successful on attempt {attempt}")
+                return result['secure_url']
+
+            except Exception as e:
+                last_error = e
+                print(f"[Cloudinary] Attempt {attempt} failed: {e}")
+                if attempt < 3:
+                    time.sleep(2 * attempt)  # wait 2s, 4s before retrying
+
+        # All 3 attempts failed
+        raise last_error
+
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
 
 # @app.route('/upload', methods=['POST'])
 # def upload():
@@ -66,23 +109,20 @@ db_init(app)
 #     if not filename or not mimetype:
 #         return 'Bad upload!', 400
 
-#     img = Img(img=pic.read(), name=filename, mimetype=mimetype)
-#     db.session.add(img)
-#     db.session.commit()
-
 #     return 'Img Uploaded!', 200
-
-@app.route('/getImg/<int:id>')
-def get_img(id):
-    img = Img.query.filter_by(id=id).first()
-    if not img:
-        return 'Img Not Found!', 404
-
-    return Response(img.img, mimetype=img.mimetype)
 
 @app.route('/',methods=['GET'])
 def home():
     return "Hello World!"
+
+@app.route('/checkConfig', methods=['GET'])
+def check_config():
+    """Debug route — confirm Cloudinary env vars are loaded correctly."""
+    return jsonify({
+        "CLOUDINARY_CLOUD_NAME": os.getenv('CLOUDINARY_CLOUD_NAME', '❌ NOT LOADED'),
+        "CLOUDINARY_API_KEY":    "✅ SET" if os.getenv('CLOUDINARY_API_KEY') else "❌ NOT LOADED",
+        "CLOUDINARY_API_SECRET": "✅ SET" if os.getenv('CLOUDINARY_API_SECRET') else "❌ NOT LOADED",
+    })
 
 #USER API
 @app.route('/signup',methods=['POST'])
@@ -96,21 +136,12 @@ def signup():
         address = request.form['address']
         pinCode = request.form['pinCode']
 
-        # pic = request.files['pic']
-        # if not pic:
-        #    userImageId = -1
-        # else:
-        #  filename = secure_filename(pic.filename)
-        #  mimetype = pic.mimetype
-        #  if not filename or not mimetype:
-        #      return 'Bad upload!', 400
-
-        #  img = Img(img=pic.read(), name=filename, mimetype=mimetype)
-        #  db.session.add(img)
-        #  db.session.flush()  # Ensure that the ID is assigned before committing
-        #  userImageId = img.id
-        #  db.session.commit()
-
+        # Image upload is optional — send as multipart field 'pic'
+        # Image is uploaded to Cloudinary; the returned URL is stored in Neon
+        userImageUrl = ''  # empty string means no image
+        pic = request.files.get('pic')  # returns None if not provided
+        if pic and pic.filename:
+            userImageUrl = upload_image_to_cloudinary(pic, folder='medical_app/users')
 
         if(validate_user(name,password,email)):
                 data = createUser(
@@ -120,7 +151,7 @@ def signup():
                 email=email,
                 pinCode=pinCode,
                 address=address,
-                userImageId = -1
+                userImageId=userImageUrl
            )
         else:
              return jsonify({"status": 400, "message": "Mandatory field empty"})
@@ -195,38 +226,22 @@ def updateUserData():
     try:
         userId = request.form['userId']
 
-        allFields = request.form.items()
         updateUser = {}
-        user_image_id = None  # Initialize user image ID
-
-
-        for key, value in allFields:
+        for key, value in request.form.items():
             if key != 'userId':
                 updateUser[key] = value
 
         # Check for the 'pic' file in the request
         pic = request.files.get('pic')  # Use .get() to avoid KeyError
+        if pic and pic.filename:
+            # Upload to Cloudinary, store URL in Neon
+            image_url = upload_image_to_cloudinary(pic, folder='medical_app/users')
+            updateUser['user_image_id'] = image_url
 
-        if pic and pic.filename:  # Check if a file is provided
-            filename = secure_filename(pic.filename)
-            mimetype = pic.mimetype
-            if not filename or not mimetype:
-                return jsonify({'status': 400, 'message': 'Bad upload!'}), 400
-            
-            new_img = Img(img=pic.read(), name=filename, mimetype=mimetype)
-            db.session.add(new_img)
-            db.session.flush()  # Get the new image ID
-            user_image_id = new_img.id
-
-            # Link this new image to the user
-            updateUser['user_image_id'] = user_image_id  # Associate the new image ID
-            
-# Only update if there are fields to update
+        # Only update if there are fields to update
         if updateUser:
             isUpdated = updateUserAllFields(userId=userId, **updateUser)
-
-            if isUpdated:  
-                db.session.commit()  # Commit the session only after successful update
+            if isUpdated:
                 return jsonify({"status": 200, "message": "Data updated"})
             else:
                 return jsonify({"status": 400, "message": "Data not updated"})
@@ -234,7 +249,6 @@ def updateUserData():
             return jsonify({"status": 400, "message": "No fields to update"})
 
     except Exception as e:
-        db.session.rollback()  # Rollback in case of error
         return jsonify({"status": 400, "message": str(e)})
 
 @app.route('/deleteUser',methods=['DELETE'])
@@ -262,22 +276,16 @@ def addProduct():
         expiry_date = request.form['product_expiry_date']
         rating = request.form['product_rating']
         description = request.form['product_description']
-        power = request.form['product_power']       
+        power = request.form['product_power']
 
-    
-        pic = request.files['pic']
-        if not pic:
-           return 'No pic uploaded!', 400
+        # Image is required for adding a product
+        pic = request.files.get('pic')
+        if not pic or not pic.filename:
+            return jsonify({'status': 400, 'message': 'No pic uploaded!'}), 400
 
-        filename = secure_filename(pic.filename)
-        mimetype = pic.mimetype
-        if not filename or not mimetype:
-             return 'Bad upload!', 400
+        # Upload to Cloudinary, get back a URL string
+        image_url = upload_image_to_cloudinary(pic, folder='medical_app/products')
 
-        img = Img(img=pic.read(), name=filename, mimetype=mimetype)
-        db.session.add(img)
-        db.session.commit()
-    
         if(validate_product(name,category,price,stock,expiry_date,rating,description,power)):
                product_id = addProductOperation(
                 name=name,
@@ -287,12 +295,12 @@ def addProduct():
                 expiry_date=expiry_date,
                 rating=rating,
                 description=description,
-                image=img.id,
+                image=image_url,   # store URL string instead of integer ID
                 power=power
             )
         else:
              return jsonify({"status": 400, "message": "Mandatory field empty"})
-                 
+
         if product_id:
               return jsonify({"status" : 200,"message" : product_id})
         else:
@@ -325,43 +333,28 @@ def updateProductOperation():
      try:
           productId = request.form['productId']
 
-          allFields = request.form.items()
           updateProduct = {}
-          product_image_id = None
-
-          for key,value in allFields:
+          for key, value in request.form.items():
                if key != 'productId':
                     updateProduct[key] = value
 
-        # Check for the 'pic' file in the request   
+          # Check for the 'pic' file in the request
           pic = request.files.get('pic')
-          if pic and pic.filename:  # Check if a file is provided
-            filename = secure_filename(pic.filename)
-            mimetype = pic.mimetype
-            if not filename or not mimetype:
-                return jsonify({'status': 400, 'message': 'Bad upload!'}), 400
-            
-            new_img = Img(img=pic.read(), name=filename, mimetype=mimetype)
-            db.session.add(new_img)
-            db.session.flush()  # Get the new image ID
-            product_image_id = new_img.id
-            # Link this new image to the user
-            updateProduct['product_image_id'] = product_image_id
+          if pic and pic.filename:
+               # Upload new image to Cloudinary, store URL in Neon
+               image_url = upload_image_to_cloudinary(pic, folder='medical_app/products')
+               updateProduct['product_image_id'] = image_url
 
           if updateProduct:
              isUpdated = updateProductAllFields(productId,**updateProduct)
-
              if isUpdated:
-                  db.session.commit()
                   return jsonify({"status": 200, "message": "Data updated"})
              else:
                 return jsonify({"status": 400, "message": "Data not updated"})
-
           else:
             return jsonify({"status": 400, "message": "No fields to update"})
 
      except Exception as e:
-        db.session.rollback()  # Rollback in case of error
         return jsonify({"status": 400, "message": str(e)})     
      
 @app.route('/deleteProduct',methods=['DELETE'])

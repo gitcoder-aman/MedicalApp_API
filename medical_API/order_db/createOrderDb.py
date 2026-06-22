@@ -12,7 +12,7 @@ def createOrderTable():
             product_id           VARCHAR(255),
             product_name         VARCHAR(255),
             product_category     VARCHAR(255),
-            product_image_id     VARCHAR(255),
+            product_image_id     TEXT,
             user_name            VARCHAR(255),
             isApproved           BOOLEAN,
             product_quantity     INT,
@@ -36,6 +36,12 @@ def createOrderTable():
             out_of_delivery_date DATE,
             delivered_date       DATE
         )
+    """)
+
+    # Fix existing table — Cloudinary URLs won't fit in VARCHAR(255)
+    cursor.execute("""
+        ALTER TABLE Orders
+        ALTER COLUMN product_image_id TYPE TEXT
     """)
 
     conn.commit()
